@@ -9,20 +9,29 @@ class Maze:
         self.width, self.height = width, height
         self.visited = [[False for i in range(width)] for i in range(height)]
         self.walls = [[[True, True, True, True] for i in range(width)] for i in range(height)]
+        self.flags = [[False for i in range(width)] for i in range(height)]  # for solving
 
         self.dfs()
         self.walls[0][1][1], self.walls[height-1][width-2][2] = False, False
 
-    def dfs(self):
+    def dfs(self, target: tuple=None):
         def is_valid(arr):
             if 0 <= arr[1] < self.width and 0 <= arr[2] < self.height:
                 return not self.visited[arr[2]][arr[1]]
+
+        def is_flag(arr):
+            return self.flags[arr[2]][arr[1]]
+
+        if not target:
+            target = (self.width-2, self.height-1)
+        self.flags[target[1]][target[0]] = True
 
         stack = [[1, 0]]
 
         while stack:
             x, y = stack[-1]
             self.visited[y][x] = True
+                
             neighbours = [[0, x - 1, y], [1, x, y - 1], [2, x, y + 1], [3, x + 1, y]]  # l, u, d, r
             valid_neighbours = list(filter(is_valid, neighbours))
             if valid_neighbours:
@@ -32,10 +41,14 @@ class Maze:
                 self.walls[next_y][next_x][3 - count] = False
             else:
                 del stack[-1]
+                if stack:
+                    self.flags[stack[-1][1]][stack[-1][0]] = self.flags[stack[-1][1]][stack[-1][0]] or self.flags[y][x]
 
     def display(self, screen, side_len=30, pad_x=20, pad_y=20, width=5):
         for y in range(len(self.walls)):
             for x, (left, up, down, right) in enumerate(self.walls[y]):
+                if self.flags[y][x]:
+                    pygame.draw.rect(screen, (255, 0, 0), (x*side_len+pad_x, y*side_len+pad_y, side_len, side_len))
                 if left:
                     start, end = (x*side_len+pad_x, y*side_len+pad_y), (x*side_len+pad_x, (y+1)*side_len+pad_y)
                     pygame.draw.line(screen, BLACK, start, end, width)
@@ -48,6 +61,7 @@ class Maze:
                 if right:
                     start, end = ((x+1)*side_len+pad_x, y*side_len+pad_y), ((x+1)*side_len+pad_x, (y+1)*side_len+pad_y)
                     pygame.draw.line(screen, BLACK, start, end, width)
+
 
 
 def initialise(width, height):

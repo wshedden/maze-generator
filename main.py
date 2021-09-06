@@ -10,19 +10,28 @@ class Maze:
         self.visited = [[False for i in range(width)] for i in range(height)]
         self.walls = [[[True, True, True, True] for i in range(width)] for i in range(height)]
 
-        self.dfs(1, 0)
+        self.dfs()
         self.walls[0][1][1], self.walls[height-1][width-2][2] = False, False
 
-    def dfs(self, x, y):
-        self.visited[y][x] = True
-        neighbours = [[0, x-1, y], [1, x, y-1], [2, x, y+1], [3, x+1, y]]  # l, u, d, r
-        random.shuffle(neighbours)
-        for count, next_x, next_y in neighbours:
-            if 0 <= next_x < self.width and 0 <= next_y < self.height:
-                if not self.visited[next_y][next_x]:
-                    self.walls[y][x][count] = False
-                    self.walls[next_y][next_x][3-count] = False
-                    self.dfs(next_x, next_y)
+    def dfs(self):
+        def is_valid(arr):
+            if 0 <= arr[1] < self.width and 0 <= arr[2] < self.height:
+                return not self.visited[arr[2]][arr[1]]
+
+        stack = [[1, 0]]
+
+        while stack:
+            x, y = stack[-1]
+            self.visited[y][x] = True
+            neighbours = [[0, x - 1, y], [1, x, y - 1], [2, x, y + 1], [3, x + 1, y]]  # l, u, d, r
+            valid_neighbours = list(filter(is_valid, neighbours))
+            if valid_neighbours:
+                count, next_x, next_y = random.choice(valid_neighbours)
+                stack.append([next_x, next_y])
+                self.walls[y][x][count] = False
+                self.walls[next_y][next_x][3 - count] = False
+            else:
+                del stack[-1]
 
     def display(self, screen, side_len=30, pad_x=20, pad_y=20, width=5):
         for y in range(len(self.walls)):
@@ -41,16 +50,15 @@ class Maze:
                     pygame.draw.line(screen, BLACK, start, end, width)
 
 
-
-def initialise():
+def initialise(width, height):
     pygame.init()
-    screen = pygame.display.set_mode([1000, 800])
+    screen = pygame.display.set_mode([width, height])
     return screen
 
 
-def display(screen, maze):
+def display(screen, maze, side_len):
     screen.fill((255, 255, 255))
-    maze.display(screen)
+    maze.display(screen, side_len=side_len)
     pygame.display.flip()
 
     running = True
@@ -61,7 +69,7 @@ def display(screen, maze):
 
 
 if __name__ == "__main__":
-    main_screen = initialise()
-    maze = Maze(50, 50)
-    display(main_screen, maze)
+    main_screen = initialise(1000, 1000)
+    maze = Maze(96, 96)
+    display(main_screen, maze, side_len=10)
     pygame.quit()

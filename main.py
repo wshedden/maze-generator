@@ -1,7 +1,10 @@
 import pygame
 import random
+import sys
 
 BLACK = (0, 0, 0)
+BLUE = (64, 106, 189)
+PAD = 20
 
 
 class Maze:
@@ -10,11 +13,11 @@ class Maze:
         self.visited = [[False for i in range(width)] for i in range(height)]
         self.walls = [[[True, True, True, True] for i in range(width)] for i in range(height)]
         self.flags = [[False for i in range(width)] for i in range(height)]  # for solving
-
-        self.dfs()
+        self.flags[self.height-1][self.width-2] = True
         self.walls[0][1][1], self.walls[height-1][width-2][2] = False, False
+        self.dfs()
 
-    def dfs(self, target: tuple=None):
+    def dfs(self):
         def is_valid(arr):
             if 0 <= arr[1] < self.width and 0 <= arr[2] < self.height:
                 return not self.visited[arr[2]][arr[1]]
@@ -22,16 +25,10 @@ class Maze:
         def is_flag(arr):
             return self.flags[arr[2]][arr[1]]
 
-        if not target:
-            target = (self.width-2, self.height-1)
-        self.flags[target[1]][target[0]] = True
-
         stack = [[1, 0]]
-
         while stack:
             x, y = stack[-1]
             self.visited[y][x] = True
-                
             neighbours = [[0, x - 1, y], [1, x, y - 1], [2, x, y + 1], [3, x + 1, y]]  # l, u, d, r
             valid_neighbours = list(filter(is_valid, neighbours))
             if valid_neighbours:
@@ -44,24 +41,23 @@ class Maze:
                 if stack:
                     self.flags[stack[-1][1]][stack[-1][0]] = self.flags[stack[-1][1]][stack[-1][0]] or self.flags[y][x]
 
-    def display(self, screen, side_len=30, pad_x=20, pad_y=20, width=5):
+    def display(self, screen, side_len=30, width=5):
         for y in range(len(self.walls)):
             for x, (left, up, down, right) in enumerate(self.walls[y]):
                 if self.flags[y][x]:
-                    pygame.draw.rect(screen, (255, 0, 0), (x*side_len+pad_x, y*side_len+pad_y, side_len, side_len))
+                    pygame.draw.rect(screen, BLUE, (x*side_len+PAD, y*side_len+PAD, side_len+1, side_len+1))
+                lines = []
+                l_x, r_x, t_y, b_y = x*side_len+PAD, (x+1)*side_len+PAD, y*side_len+PAD, (y+1)*side_len+PAD
                 if left:
-                    start, end = (x*side_len+pad_x, y*side_len+pad_y), (x*side_len+pad_x, (y+1)*side_len+pad_y)
-                    pygame.draw.line(screen, BLACK, start, end, width)
+                    lines.append([(l_x, t_y), (l_x, b_y)])
                 if up:
-                    start, end = (x*side_len+pad_x, y*side_len+pad_y), ((x+1)*side_len+pad_x, y*side_len+pad_y)
-                    pygame.draw.line(screen, BLACK, start, end, width)
+                    lines.append([(l_x, t_y), (r_x, t_y)])
                 if down:
-                    start, end = (x*side_len+pad_x, (y+1)*side_len+pad_y), ((x+1)*side_len+pad_x, (y+1)*side_len+pad_y)
-                    pygame.draw.line(screen, BLACK, start, end, width)
+                    lines.append([(l_x, b_y), (r_x, b_y)])
                 if right:
-                    start, end = ((x+1)*side_len+pad_x, y*side_len+pad_y), ((x+1)*side_len+pad_x, (y+1)*side_len+pad_y)
+                    lines.append([(r_x, t_y), (r_x, b_y)])
+                for start, end in lines:
                     pygame.draw.line(screen, BLACK, start, end, width)
-
 
 
 def initialise(width, height):
@@ -70,20 +66,30 @@ def initialise(width, height):
     return screen
 
 
-def display(screen, maze, side_len):
+def display_maze(screen, maze, side_len):
     screen.fill((255, 255, 255))
-    maze.display(screen, side_len=side_len)
+    maze.display(screen, side_len=side_len, width=2)
     pygame.display.flip()
 
     running = True
     while running:
+        pygame.event.wait()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
 
 if __name__ == "__main__":
-    main_screen = initialise(1000, 1000)
-    maze = Maze(96, 96)
-    display(main_screen, maze, side_len=10)
+    try:
+        x, y, width, height = [int(i) for i in sys.argv[1:]]
+    except ValueError:
+        print("Arguments not inputted; defaults used")
+        print("x = 50\ny = 50\nwidth = 1000\nheight = 1000")
+        x, y, width, height = 50, 50, 1000, 1000
+
+    side_len = min((width - PAD * 2) / x, (height - PAD * 2) / y)
+
+    main_screen = initialise(width, height)
+    maze = Maze(x, y)
+    display_maze(main_screen, maze, side_len=side_len)
     pygame.quit()

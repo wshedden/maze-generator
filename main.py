@@ -81,13 +81,13 @@ def display_maze(screen, maze, side_len):
 
 if __name__ == "__main__":
     try:
-        x, y, width, height = [int(i) for i in sys.argv[1:]]
+        x, y, side_len = [int(i) for i in sys.argv[1:]]
     except ValueError:
         print("Arguments not inputted; defaults used")
-        print("x = 50\ny = 50\nwidth = 1000\nheight = 1000")
-        x, y, width, height = 50, 50, 1000, 1000
+        print("x = 50\ny = 50\nside length = 10")
+        x, y, side_len = 100, 100, 10
 
-    side_len = min((width - PAD * 2) / x, (height - PAD * 2) / y)
+    width, height = 2 * PAD + side_len * x, 2 * PAD + side_len * y
 
     main_screen = initialise(width, height)
     maze = Maze(x, y)
